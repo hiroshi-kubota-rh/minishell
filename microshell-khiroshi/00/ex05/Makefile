@@ -23,11 +23,11 @@ OBJ := $(SRC:.c=.o)
 
 NAME = minishell
 
-$(NAME): all
-
-PHONY: all
-all: $(OBJ)
+$(NAME) : $(OBJ)
 	gcc  $(OBJ) -lreadline -o $(NAME)
+PHONY: all
+all: $(NAME)
+
 
 
 %.o: %.c
