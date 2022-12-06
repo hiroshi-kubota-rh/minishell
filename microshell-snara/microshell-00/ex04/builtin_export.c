@@ -23,6 +23,7 @@ t_dict	g_env;
 char	*ft_strcdup(char const *s, int issep(char));
 char	**ft_split_func_n(char const *s, bool issep(), size_t n);
 
+#if 0
 int	env_replace(t_env *e, char const *name, char const *value)
 {
 	while (e)
@@ -61,6 +62,7 @@ t_env	*env_append(t_env *e, t_env *next)
 	e->next = next;
 	return (head);
 }
+#endif
 
 static int	issep(char c)
 {
@@ -112,7 +114,7 @@ bool	env_generate(t_dict *dict, char **environ)
 	{
 		e = str_to_env(environ[i]);
 		if (!e.name)
-			printf("export: %s error\n", environ[i]);
+			printf("export: %s: not a valid identifier\n", environ[i]);
 		else if (!dict_insert(dict, e.name, e.value))
 			return (false);
 		i++;
@@ -120,7 +122,7 @@ bool	env_generate(t_dict *dict, char **environ)
 	return (true);
 }
 
-void	env_print(const t_dict *dict)
+static void	env_print(const t_dict *dict, const char *prefix)
 {
 	size_t	i;
 	t_entry	e;
@@ -129,29 +131,40 @@ void	env_print(const t_dict *dict)
 	while (i < dict->cap)
 	{
 		e = dict->ptr[i++];
-		if (e.key)
-			printf("declare -x %s=%s \n", e.key, e.val);
+		if (e.key && e.val)
+			printf("%s%s=%s\n", prefix, e.key, e.val);
+		else if (e.key && prefix[0])
+			printf("%s%s\n", prefix, e.key);
 	}
+}
+
+int	builtin_env(int argc, char **argv)
+{
+	extern char	**environ;
+
+	(void)argv;
+	if (argc > 1 && printf("env: too many arguments\n"))
+		return (1);
+#if 1
+	env_print(&g_env, "");
+#else
+	size_t		i;
+	i = 0;
+	while (environ[i])
+		printf("%s\n", environ[i++]);
+#endif
+	return (0);
 }
 
 int	builtin_export(int argc, char **argv)
 {
 	extern char	**environ;
-	size_t		i;
 
 	if (!g_env.len)
 		env_generate(&g_env, environ);
 	if (argc <= 1)
-	{
-		env_print(&g_env);
-		return (0);
-	}
+		return (env_print(&g_env, "declare -x "), 0);
 	env_generate(&g_env, &argv[1]);
-	i = 1;
-	while (argv[i])
-	{
-		i++;
-	}
 	return (0);
 }
 
@@ -160,10 +173,8 @@ int	builtin_unset(int argc, char **argv)
 	size_t		i;
 	t_entry		*e;
 
-	if (argc <= 1)
-	{
-		printf("unset: not enough arguments\n");
-	}
+	if (argc <= 1 && printf("unset: not enough arguments\n"))
+		return (1);
 	i = 1;
 	while (argv[i])
 	{

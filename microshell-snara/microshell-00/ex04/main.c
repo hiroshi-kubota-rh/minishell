@@ -65,25 +65,7 @@ static int	builtin_pwd(int argc, char **argv)
 	return (0);
 }
 
-static int	builtin_env(int argc, char **argv)
-{
-	extern char	**environ;
-	size_t		i;
-
-	(void)argv;
-	if (argc > 1 && printf("env: too many arguments\n"))
-		return (1);
-	i = 0;
-	while (environ[i])
-		printf("%s\n", environ[i++]);
-	return (0);
-}
-
-static int	ft_iseqsign(int c)
-{
-	return (c == '=');
-}
-
+int	builtin_env(int argc, char **argv);
 int	builtin_export(int argc, char **argv);
 int	builtin_unset(int argc, char **argv);
 
