@@ -1,3 +1,4 @@
+#include <signal.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <errno.h>
@@ -6,6 +7,7 @@
 #include <stdio.h>
 #include <ctype.h>
 #include <fcntl.h>
+#include <sys/stat.h>
 #include <readline/readline.h>
 
 size_t	ft_wordcount(char const *s, int issep());
@@ -46,41 +48,39 @@ int	exec_abspath(int argc, char **argv)
 	extern char	**environ;
 	pid_t		pid;
 	int			status;
+	struct stat	st;
 
-	if (access(argv[0], X_OK) != 0)
-	{
-		printf("command not found: %s\n", argv[0]);
+	(void)argc;
+	if (((stat(argv[0], &st) != 0) && printf("command not found: %s\n", argv[0]))
+		|| (!(st.st_mode & S_IXUSR) && printf("permission denied: %s\n", argv[0]))
+		|| (S_ISDIR(st.st_mode) && printf("is a directory: %s\n", argv[0]))
+	)
 		return (1);
-	}
 	pid = fork();
-	if (pid == -1)
-	{
-		printf("fork() failed\n");
+	if (pid == -1 && printf("fork() failed\n"))
 		return (-1);
-	}
 	if (pid == 0)
 	{
 		execve(argv[0], argv, environ);
-		printf("execve() failed\n");
+		printf("execve() failed: "), perror(argv[0]);
 		exit(1);
 	}
 	pid = waitpid(pid, &status, 0);
-	if (pid == -1)
-	{
-		printf("wait() failed\n");
+	if (pid == -1 && (perror("waitpid() failed"), 1))
 		return (-1);
-	}
+	if (WIFEXITED(status))
+		return (WEXITSTATUS(status));
+	if (WIFSIGNALED(status))
+		return (128 + WTERMSIG(status));
 	return (status);
 }
 
 static int	microshell(void)
 {
-	long	status;
 	char	*line;
 	int		argc;
 	char	**argv;
 
-	status = 0;
 	line = NULL;
 	while (free(line), 1)
 	{
@@ -92,7 +92,8 @@ static int	microshell(void)
 			continue ;
 		add_history(line);
 		argv = ft_split_func(line, isspace);
-		status = exec_abspath(argc, argv);
+		int status = exec_abspath(argc, argv);
+		printf("$?=%d\n", status);
 		argv = ft_free_split(argv);
 	}
 	return (0);
