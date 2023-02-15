@@ -57,4 +57,15 @@ assert './'
 assert '/'
 assert '.'
 
+assert 'cat -e main.c'
+assert 'echo   hello   world'
+assert 'echo  " hello   world  " '
+assert "echo  ' hello   world  ' "
+assert "echo  ' hello ''  world  ' "
+assert "echo  ' hello'  ' world  ' "
+assert 'echo ""'
+assert "echo ''"
+assert "echo \"''\""
+assert "echo '\"\"'"
+
 cleanup
