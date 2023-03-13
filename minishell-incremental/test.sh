@@ -10,7 +10,7 @@ assert () {
 	echo -n -e "$1" | LANG=en bash >cmp
 	expected=$?
 
-	echo -n -e "$1" | ./minishell >out
+	echo -n -e "$1" | LANG=en ./minishell >out
 	actual=$?
 
 	diff cmp out \
@@ -55,17 +55,25 @@ assert './nosuchfile'
 assert './main.c'
 assert './'
 assert '/'
-assert '.'
 
 assert 'cat -e main.c'
+assert 'ls /'
+assert 'ls -a -h -F .'
 assert 'echo   hello   world'
 assert 'echo  " hello   world  " '
 assert "echo  ' hello   world  ' "
+assert 'echo  " hello ""  world  " '
+assert 'echo  " hello " " world  " '
 assert "echo  ' hello ''  world  ' "
 assert "echo  ' hello'  ' world  ' "
+assert 'echo" hello world " '
 assert 'echo ""'
 assert "echo ''"
 assert "echo \"''\""
 assert "echo '\"\"'"
+
+assert 'cat<test.sh'
+assert '<test.sh wc'
+assert 'echo hello>file1 \n cat file1 \n rm file1'
 
 cleanup
