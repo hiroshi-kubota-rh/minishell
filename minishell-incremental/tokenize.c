@@ -4,26 +4,23 @@
 #include <stdio.h>
 #include <string.h>
 
-typedef enum e_token_kind	t_e_tkind;
-enum e_token_kind {
-	TK_BEGIN,
-	TK_WORD,
-	TK_RESERVED,
-	TK_OP,
-	TK_EOF,
-};
-
-typedef struct s_token	t_token;
-struct	s_token {
-	char		*word;
-	t_e_tkind	kind;
-	t_token		*next;
-};
+#include "minishell.h"
 
 __attribute__((noreturn))
 void	fatal(const char *msg);
 
 void	*or_exit(void *p);
+
+t_token	*token_new(char *word, t_e_tkind kind)
+{
+	t_token	*tok;
+
+	tok = or_exit(calloc(1, sizeof(t_token)));
+	tok->word = word;
+	tok->kind = kind;
+	tok->next = NULL;
+	return (tok);
+}
 
 bool	ft_isblank(char c)
 {
@@ -43,18 +40,9 @@ bool	consume_blank(const char **rest, const char *line)
 	return (true);
 }
 
-t_token	*token_new(char *word, t_e_tkind kind)
-{
-	t_token	*tok;
-
-	tok = or_exit(calloc(1, sizeof(t_token)));
-	*tok = (t_token){word, kind, NULL};
-	return (tok);
-}
-
 const char	*is_operator(const char *s)
 {
-	static const char	*operators[] = {">>", ">", "<", "<<", "|", "||", "&", "&&", ";", ";;", "(", ")", "|&", "\n",};
+	static const char	*operators[] = {">>", ">", "<<", "<", "||", "&&", "|", ";", "\n", "(", ")",};
 	size_t				i;
 
 	i = 0;
@@ -192,14 +180,11 @@ void	remove_quote(t_token *tok)
 	}
 }
 
-t_token	*expand(t_token *tok)
+t_node	*expand(t_node *node)
 {
-	remove_quote(tok);
-	return (tok);
+	remove_quote(node->args);
+	return (node);
 }
-
-//
-//
 
 size_t	token_len(t_token *tok)
 {
@@ -210,11 +195,9 @@ size_t	token_len(t_token *tok)
 	i = 0;
 	while (t && t->kind != TK_EOF)
 	{
-dprintf(2, "[%s]", t->word);
 		i++;
 		t = t->next;
 	}
-dprintf(2, "\n");
 	return (i);
 }
 
@@ -229,9 +212,11 @@ char	**token_to_argv(t_token *tok)
 	t = tok;
 	while (t && t->kind != TK_EOF)
 	{
+		dprintf(2, "[%s]", t->word);
 		argv[i] = t->word;
 		i++;
 		t = t->next;
 	}
+	dprintf(2, "\n");
 	return (argv);
 }

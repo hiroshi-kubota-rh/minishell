@@ -4,20 +4,12 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include "minishell.h"
 
 __attribute__((noreturn))
-void	fatal(const char *msg)
-{
-	dprintf(2, "error: %s\n",  msg);
-	exit(1);
-}
+void	fatal(const char *msg);
 
-void	*or_exit(void *p)
-{
-	if (p)
-		return (p);
-	fatal("malloc");
-}
+void	*or_exit(void *p);
 
 size_t	ft_strnclen(const char *s, size_t n, char c)
 {
@@ -93,21 +85,26 @@ int	exec_child(char *argv[])
 	fatal("execve");
 }
 
-int	exec(char *argv[])
+char	**token_to_argv(t_token *tok);
+void	redirect_reset(t_redir *re);
+int	exec(t_node *node)
 {
 	pid_t		pid;
 	int			wstatus;
+	char		**argv;
 
 	pid = fork();
 	if (pid < 0)
 		fatal("fork");
 	else if (pid == 0)
 	{
+		argv = token_to_argv(node->args);
 		exec_child(argv);
 	}
 	else
 	{
 		waitpid(0, &wstatus, 0);
+		redirect_reset(node->redirect);
 		if (WIFEXITED(wstatus))
 			return (WEXITSTATUS(wstatus));
 		if (WIFSIGNALED(wstatus))

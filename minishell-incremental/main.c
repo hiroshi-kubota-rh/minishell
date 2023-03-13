@@ -3,13 +3,14 @@
 #include <readline/readline.h>
 #include <readline/history.h>
 
+#include "minishell.h"
+
 #define ERROR_SYNTAX 2
 
-typedef struct s_token	t_token;
 t_token	*tokenize(const char *line);
-t_token	*expand(t_token *tok);
-char	**token_to_argv(t_token *tok);
-int	exec(char *argv[]);
+t_node	*parse(t_token *tok);
+t_node	*expand(t_node *tok);
+int		exec(t_node *node);
 
 int	g_status = 0;
 
@@ -21,14 +22,14 @@ void	init()
 int	interpret(char *line)
 {
 	t_token	*tok;
-	char	**argv;
+	t_node	*node;
 
 	tok = tokenize(line);
-	if (!tok)
-		g_status = ERROR_SYNTAX;
-	tok = expand(tok);
-	argv = token_to_argv(tok);
-	g_status = exec(argv);
+	node = parse(tok);
+	if (g_status == ERROR_SYNTAX)
+		return (g_status);
+	node = expand(node);
+	g_status = exec(node);
 	return (g_status);
 }
 
