@@ -5,6 +5,8 @@
 #include <fcntl.h>
 #include "minishell.h"
 
+#include <readline/readline.h>
+
 __attribute__((noreturn))
 void	fatal(const char *msg);
 
@@ -49,23 +51,6 @@ int	stashfd(int fd)
 		fatal("close");
 	return (stashfd);
 }
-t_redir	*redirect_in(const char *name)
-{
-	t_redir	*re;
-	t_fd	fd;
-
-	re = or_exit(calloc(1, sizeof(t_redir)));
-	re->target_fd = 0;
-	re->next = NULL;
-	re->filename = name;
-	fd = open(name, O_RDONLY, 0644);
-	if (fd < 0)
-		fatal("could not open file");
-	re->file_fd = fd;
-	re->stash_fd = stashfd(re->target_fd);
-	dup2(re->file_fd, re->target_fd);
-	return re;
-}
 t_redir	*redirect_out(const char *name)
 {
 	t_redir	*re;
@@ -96,6 +81,57 @@ t_redir	*redirect_app(const char *name)
 	re->target_fd = 1;
 	re->file_fd = fd;
 	re->next = NULL;
+	re->stash_fd = stashfd(re->target_fd);
+	dup2(re->file_fd, re->target_fd);
+	return re;
+}
+t_redir	*redirect_in(const char *name)
+{
+	t_redir	*re;
+	t_fd	fd;
+
+	re = or_exit(calloc(1, sizeof(t_redir)));
+	re->target_fd = 0;
+	re->next = NULL;
+	re->filename = name;
+	fd = open(name, O_RDONLY, 0644);
+	if (fd < 0)
+		fatal("could not open file");
+	re->file_fd = fd;
+	re->stash_fd = stashfd(re->target_fd);
+	dup2(re->file_fd, re->target_fd);
+	return re;
+}
+t_fd	read_heredoc(const char *delim)
+{
+	t_fd	pfd[2];
+	char	*line;
+
+	if (pipe(pfd) < 0)
+		fatal("could not open pipe");
+	while (1)
+	{
+		line = readline("heredoc> ");
+		if (!line || !strcmp(line, delim))
+		{
+			free(line);
+			break;
+		}
+		dprintf(pfd[1], "%s\n", line);
+		free(line);
+	}
+	close(pfd[1]);
+	return (pfd[0]);
+}
+t_redir	*redirect_heredoc(const char *delim)
+{
+	t_redir	*re;
+
+	re = or_exit(calloc(1, sizeof(t_redir)));
+	re->target_fd = 0;
+	re->next = NULL;
+	re->filename = NULL;
+	re->file_fd = read_heredoc(delim);
 	re->stash_fd = stashfd(re->target_fd);
 	dup2(re->file_fd, re->target_fd);
 	return re;
@@ -146,6 +182,12 @@ t_node	*parse(t_token *tok)
 		else if (!strcmp(t->word, "<") && t->next->kind == TK_WORD)
 		{
 			redirect_push_front(&node->redirect, redirect_in(t->next->word));
+			t = t->next->next;
+			continue ;
+		}
+		else if (!strcmp(t->word, "<<") && t->next->kind == TK_WORD)
+		{
+			redirect_push_front(&node->redirect, redirect_heredoc(t->next->word));
 			t = t->next->next;
 			continue ;
 		}

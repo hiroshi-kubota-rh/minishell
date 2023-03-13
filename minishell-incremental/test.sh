@@ -75,5 +75,7 @@ assert "echo '\"\"'"
 assert 'cat<test.sh'
 assert '<test.sh wc'
 assert 'echo hello>file1 \n cat file1 \n rm file1'
+assert 'cat<<eof \n hello \n world \neof\n'
+assert 'cat<<"" \n hello \n world \neof\n \n\n\n'
 
 cleanup
